@@ -705,7 +705,7 @@ abstract class Model implements JsonSerializable, ArrayAccess, Arrayable, Jsonab
 
             if ($this->updateTime && !isset($data[$this->updateTime])) {
                 $data[$this->updateTime] = $this->autoWriteTimestamp();
-                $this->data[$this->createTime] = $data[$this->createTime];
+                $this->data[$this->updateTime] = $data[$this->updateTime];
             }
         }
 
