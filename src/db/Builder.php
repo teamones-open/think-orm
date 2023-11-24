@@ -1038,7 +1038,7 @@ abstract class Builder
      */
     protected function parseHint(Query $query, string $hint): string
     {
-        return !empty($hint) ? ' /*' . $hint . '*/' : '';
+        return !empty($hint) ? '/*' . $hint . '*/' : '';
     }
 
     /**
