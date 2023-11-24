@@ -45,7 +45,7 @@ class Mysql extends Builder
      * SELECT SQL表达式
      * @var string
      */
-    protected $selectSql = 'SELECT%DISTINCT%%EXTRA% %FIELD% FROM %TABLE%%PARTITION%%FORCE%%JOIN%%WHERE%%GROUP%%HAVING%%UNION%%ORDER%%LIMIT% %LOCK%%COMMENT%';
+    protected $selectSql = '%HINT% SELECT%DISTINCT%%EXTRA% %FIELD% FROM %TABLE%%PARTITION%%FORCE%%JOIN%%WHERE%%GROUP%%HAVING%%UNION%%ORDER%%LIMIT% %LOCK%%COMMENT%';
 
     /**
      * INSERT SQL表达式
@@ -83,8 +83,9 @@ class Mysql extends Builder
         $options = $query->getOptions();
 
         return str_replace(
-            ['%TABLE%', '%PARTITION%', '%DISTINCT%', '%EXTRA%', '%FIELD%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%', '%UNION%', '%LOCK%', '%COMMENT%', '%FORCE%'],
+            ['%HINT%', '%TABLE%', '%PARTITION%', '%DISTINCT%', '%EXTRA%', '%FIELD%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%', '%UNION%', '%LOCK%', '%COMMENT%', '%FORCE%'],
             [
+                $this->parseHint($query, $options['hint']),
                 $this->parseTable($query, $options['table']),
                 $this->parsePartition($query, $options['partition']),
                 $this->parseDistinct($query, $options['distinct']),

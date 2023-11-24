@@ -826,6 +826,26 @@ abstract class BaseQuery
     }
 
     /**
+     * 强制走主DB查询
+     * @return $this
+     */
+    public function forceMasterDB()
+    {
+        return $this->hint('FORCE_MASTER');
+    }
+
+    /**
+     * 增加hint标识
+     * @param $hintContent
+     * @return $this
+     */
+    public function hint($hintContent)
+    {
+        $this->options['hint'] = $hintContent;
+        return $this;
+    }
+
+    /**
      * 设置是否严格检查字段名
      * @access public
      * @param bool $strict 是否严格检查字段
@@ -1187,7 +1207,7 @@ abstract class BaseQuery
             }
         }
 
-        foreach (['group', 'having', 'limit', 'force', 'comment', 'partition', 'duplicate', 'extra'] as $name) {
+        foreach (['hint', 'group', 'having', 'limit', 'force', 'comment', 'partition', 'duplicate', 'extra'] as $name) {
             if (!isset($options[$name])) {
                 $options[$name] = '';
             }
