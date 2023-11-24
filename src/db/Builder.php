@@ -1030,6 +1030,18 @@ abstract class Builder
     }
 
     /**
+     * 增加 Hint
+     * @access protected
+     * @param  Query  $query  查询对象
+     * @param  string $hint
+     * @return string
+     */
+    protected function parseHint(Query $query, string $hint): string
+    {
+        return !empty($hint) ? ' /*' . $hint . '*/' : '';
+    }
+
+    /**
      * distinct分析
      * @access protected
      * @param  Query $query  查询对象
