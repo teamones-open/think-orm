@@ -54,10 +54,11 @@ class Pivot extends Model
      *
      * @return void
      */
-    protected function init() 
+    protected function init()
     {
-        if (is_null($this->getOption('name'))) {
-            $this->setOption('name', $this->pivotName);
+        // 兼容：空字符串视同未指定表名，交由 getName() 按类名推导
+        if (empty($this->getOption('name'))) {
+            $this->setOption('name', $this->pivotName ?: null);
         }
     }
 

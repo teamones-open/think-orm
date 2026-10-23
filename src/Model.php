@@ -433,7 +433,15 @@ abstract class Model implements JsonSerializable, ArrayAccess, Arrayable, Jsonab
     {
         $data     = $this->getData();
         $origin   = $this->getOrigin();
-        $allow    = $this->getOption('allow') ?: array_keys($this->getFields());
+        $allow    = $this->getOption('allow');
+        if (empty($allow)) {
+            // schema 仅作类型提示：保存白名单以真实表字段为准，
+            // 避免模型 schema 漏声明时字段被静默丢弃。
+            // 注意不能走 Query::getTableFields()，它会被 query 上的 field_type（模型 schema）短路。
+            $query  = $this->db();
+            $fields = $query->getConnection()->getTableFields($query->getTable());
+            $allow  = $fields ?: array_keys($this->getFields());
+        }
         $readonly = $this->getOption('readonly');
         $disuse   = $this->getOption('disuse');
         $allow    = array_diff($allow, $disuse, $isUpdate ? $readonly : []);
