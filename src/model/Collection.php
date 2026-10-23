@@ -1,46 +1,68 @@
 <?php
+
 // +----------------------------------------------------------------------
 // | ThinkPHP [ WE CAN DO IT JUST THINK ]
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2019 http://thinkphp.cn All rights reserved.
+// | Copyright (c) 2006~2025 http://thinkphp.cn All rights reserved.
 // +----------------------------------------------------------------------
 // | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
 // | Author: zhangyajun <448901948@qq.com>
 // +----------------------------------------------------------------------
-declare (strict_types = 1);
+declare(strict_types=1);
 
 namespace think\model;
 
 use think\Collection as BaseCollection;
-use think\Model;
+use think\model\contract\Modelable as Model;
 use think\Paginator;
 
 /**
- * 模型数据集类
+ * 模型数据集类.
+ *
+ * @template TKey of array-key
+ * @template TModel of \think\Model
+ *
+ * @extends BaseCollection<TKey, TModel>
  */
 class Collection extends BaseCollection
 {
     /**
-     * 延迟预载入关联查询
-     * @access public
-     * @param  array|string $relation 关联
-     * @param  mixed        $cache    关联缓存
+     * 延迟预载入关联查询.
+     *
+     * @param array $relation 关联
+     * @param mixed $cache    关联缓存
+     * @param bol   $withJoin 是否JOIN
+     *
      * @return $this
      */
-    public function load($relation, $cache = false)
+    public function load(array $relation, $cache = false, bool $withJoin = false)
     {
         if (!$this->isEmpty()) {
             $item = current($this->items);
-            $item->eagerlyResultSet($this->items, (array) $relation, [], false, $cache);
+            $item->eagerlyResultSet($this->items, $relation, [], $withJoin, $cache);
         }
 
         return $this;
     }
 
     /**
-     * 删除数据集的数据
-     * @access public
+     * 转换为视图模型
+     *
+     * @param string $view 视图类名
+     *
+     * @return $this
+     */
+    public function toView(string $view)
+    {
+        return $this->map(function (Model $model) use($view) {
+            return $model->toView($view);
+        });
+    }
+
+    /**
+     * 删除数据集的数据.
+     *
      * @return bool
      */
     public function delete(): bool
@@ -53,10 +75,11 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 更新数据
-     * @access public
+     * 更新数据.
+     *
      * @param array $data       数据数组
      * @param array $allowField 允许字段
+     *
      * @return bool
      */
     public function update(array $data, array $allowField = []): bool
@@ -73,54 +96,77 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 设置需要隐藏的输出属性
-     * @access public
-     * @param  array $hidden 属性列表
+     * 设置需要隐藏的输出属性.
+     *
+     * @param array $hidden 属性列表
+     * @param bool  $merge  是否合并
+     *
      * @return $this
      */
-    public function hidden(array $hidden)
+    public function hidden(array $hidden, bool $merge = false)
     {
-        $this->each(function (Model $model) use ($hidden) {
-            $model->hidden($hidden);
+        $this->each(function (Model $model) use ($hidden, $merge) {
+            $model->hidden($hidden, $merge);
         });
 
         return $this;
     }
 
     /**
-     * 设置需要输出的属性
-     * @access public
-     * @param  array $visible
+     * 设置需要输出的属性.
+     *
+     * @param array $visible
+     * @param bool  $merge   是否合并
+     *
      * @return $this
      */
-    public function visible(array $visible)
+    public function visible(array $visible, bool $merge = false)
     {
-        $this->each(function (Model $model) use ($visible) {
-            $model->visible($visible);
+        $this->each(function (Model $model) use ($visible, $merge) {
+            $model->visible($visible, $merge);
         });
 
         return $this;
     }
 
     /**
-     * 设置需要追加的输出属性
-     * @access public
-     * @param  array $append 属性列表
+     * 设置需要追加的输出属性.
+     *
+     * @param array $append 属性列表
+     * @param bool  $merge  是否合并
+     *
      * @return $this
      */
-    public function append(array $append)
+    public function append(array $append, bool $merge = false)
     {
-        $this->each(function (Model $model) use ($append) {
-            $model->append($append);
+        $this->each(function (Model $model) use ($append, $merge) {
+            $model->append($append, $merge);
         });
 
         return $this;
     }
 
     /**
-     * 设置模型输出场景
-     * @access public
-     * @param  string $scene   场景名称
+     * 设置属性映射.
+     *
+     * @param array $mapping 属性映射
+     *
+     * @return $this
+     */
+    public function mapping(array $mapping)
+    {
+        $this->each(function (Model $model) use ($mapping) {
+            $model->mapping($mapping);
+        });
+
+        return $this;
+    }
+
+    /**
+     * 设置模型输出场景.
+     *
+     * @param string $scene 场景名称
+     *
      * @return $this
      */
     public function scene(string $scene)
@@ -133,43 +179,31 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 设置父模型
-     * @access public
-     * @param  Model $parent 父模型
+     * 设置数据字段获取器.
+     *
+     * @param string|array $name     字段名
+     * @param callable     $callback 闭包获取器
+     *
      * @return $this
      */
-    public function setParent(Model $parent)
-    {
-        $this->each(function (Model $model) use ($parent) {
-            $model->setParent($parent);
-        });
-
-        return $this;
-    }
-
-    /**
-     * 设置数据字段获取器
-     * @access public
-     * @param  string|array $name       字段名
-     * @param  callable     $callback   闭包获取器
-     * @return $this
-     */
-    public function withAttr($name, $callback = null)
+    public function withAttr(string|array $name, ?callable $callback = null)
     {
         $this->each(function (Model $model) use ($name, $callback) {
-            $model->withAttribute($name, $callback);
+            $model->withFieldAttr($name, $callback);
         });
 
         return $this;
     }
 
     /**
-     * 绑定（一对一）关联属性到当前模型
-     * @access protected
-     * @param  string $relation 关联名称
-     * @param  array  $attrs    绑定属性
-     * @return $this
+     * 绑定（一对一）关联属性到当前模型.
+     *
+     * @param string $relation 关联名称
+     * @param array  $attrs    绑定属性
+     *
      * @throws Exception
+     *
+     * @return $this
      */
     public function bindAttr(string $relation, array $attrs = [])
     {
@@ -181,14 +215,14 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 按指定键整理数据
+     * 按指定键整理数据.
      *
-     * @access public
-     * @param  mixed  $items    数据
-     * @param  string $indexKey 键名
+     * @param mixed       $items    数据
+     * @param string|null $indexKey 键名
+     *
      * @return array
      */
-    public function dictionary($items = null, string &$indexKey = null)
+    public function dictionary($items = null, ?string &$indexKey = null)
     {
         if ($items instanceof self || $items instanceof Paginator) {
             $items = $items->all();
@@ -208,20 +242,20 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 比较数据集，返回差集
+     * 比较数据集，返回差集.
      *
-     * @access public
-     * @param  mixed  $items    数据
-     * @param  string $indexKey 指定比较的键名
+     * @param mixed       $items    数据
+     * @param string|null $indexKey 指定比较的键名
+     *
      * @return static
      */
-    public function diff($items, string $indexKey = null)
+    public function diff($items, ?string $indexKey = null)
     {
         if ($this->isEmpty()) {
             return new static($items);
         }
 
-        $diff       = [];
+        $diff = [];
         $dictionary = $this->dictionary($items, $indexKey);
 
         if (is_string($indexKey)) {
@@ -236,20 +270,20 @@ class Collection extends BaseCollection
     }
 
     /**
-     * 比较数据集，返回交集
+     * 比较数据集，返回交集.
      *
-     * @access public
-     * @param  mixed  $items    数据
-     * @param  string $indexKey 指定比较的键名
+     * @param mixed       $items    数据
+     * @param string|null $indexKey 指定比较的键名
+     *
      * @return static
      */
-    public function intersect($items, string $indexKey = null)
+    public function intersect($items, ?string $indexKey = null)
     {
         if ($this->isEmpty()) {
             return new static([]);
         }
 
-        $intersect  = [];
+        $intersect = [];
         $dictionary = $this->dictionary($items, $indexKey);
 
         if (is_string($indexKey)) {

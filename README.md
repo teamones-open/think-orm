@@ -1,31 +1,61 @@
-# 主要改动
+# teamones/think-orm 3.x
 
-全部注释 Model.php 自动事务处理，特性功能与官方保持同步
+基于 [topthink/think-orm](https://github.com/top-think/think-orm) **4.0.51** 的 webman 2.x 适配版。
 
-# ThinkORM
+## 版本对应
 
-基于PHP7.1+ 和PDO实现的ORM，支持多数据库，2.0版本主要特性包括：
+| 版本 | PHP | 上游基线 | 说明 |
+| --- | --- | --- | --- |
+| 3.x | >= 8.1（兼容 8.5） | think-orm 4.0.51 | webman 2.2 / workerman 5.2 适配 |
+| 0.0.x | >= 7.1 | think-orm 2.0.53 | 旧 webman 1.x 使用，仅缺陷修复 |
 
-* 基于PDO和PHP强类型实现
-* 支持原生查询和查询构造器
-* 自动参数绑定和预查询
-* 简洁易用的查询功能
-* 强大灵活的模型用法
-* 支持预载入关联查询和延迟关联查询
-* 支持多数据库及动态切换
-* 支持`MongoDb`
-* 支持分布式及事务
-* 支持断点重连
-* 支持`JSON`查询
-* 支持数据库日志
-* 支持`PSR-16`缓存及`PSR-3`日志规范
+## 与上游的差异
 
+1. **保留 teamones 扩展**：`BaseQuery::hint()`、`BaseQuery::forceMasterDB()`，配合 MySQL builder 的 `%HINT%` 注入 SQL 注释（供 DB 代理做读写分离/强制主库）。
+2. **新增 webman 2.2 集成层**（`teamones\thinkorm` 命名空间）：
+   - `Bootstrap`：合并 `config('thinkorm')` 与 `config('think-orm')`，绑定 `think\DbManager`，写入数据库配置、查询缓存与分页解析器。
+   - `DbManager`：连接池（需 `Webman\Context` + `Workerman\Coroutine\Pool` 且连接配置显式提供 `pool` 段，否则退化为原生行为）。
+   - `ThinkCache`：把 `support\Cache` 适配成 PSR-16。
+   - `Db`：绑定本包 DbManager 的门面。
+3. **依赖收紧**：`psr/log ^2.0 || ^3.0`（上游为 `>=1.0`），可与 webman 2.2 的 `psr/log ^2||^3` 共存。
+4. 通过 `replace: {"topthink/think-orm": "4.0.51"}` 顶替上游包，避免同命名空间冲突。
 
 ## 安装
-~~~
-composer require topthink/think-orm
-~~~
 
-## 文档
+```bash
+composer require teamones/think-orm:^3.0
+```
 
-详细参考 [ThinkORM开发指南](https://www.kancloud.cn/manual/think-orm/content)
+## webman 2.2 配置
+
+`config/bootstrap.php` 增加：
+
+```php
+return [
+    teamones\thinkorm\Bootstrap::class,
+];
+```
+
+配置文件继续使用 `config/thinkorm.php`（旧键名）或改为 `config/think-orm.php`（新键名），两者会被合并，`think-orm` 优先。
+
+连接池示例：
+
+```php
+'connections' => [
+    'mysql' => [
+        // ...
+        'pool' => [
+            'max_connections' => 5,
+            'min_connections' => 1,
+            'wait_timeout'    => 3,
+            'idle_timeout'    => 60,
+        ],
+    ],
+],
+```
+
+强制主库查询：
+
+```php
+Db::name('asset')->forceMasterDB()->select();
+```
